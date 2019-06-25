@@ -1,0 +1,23 @@
+spring:
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/szxyh_db?useSSL=false&characterEncoding=UTF8&useLegacyDatetimeCode=false&serverTimezone=UTC
+    username: root
+    password: root
+  #jpa:
+   # hibernate:
+    #  ddl-auto: update
+    #show-sql: true
+  
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: UTC
+    
+
+#公共配置与profiles选择无关
+mybatis:
+  typeAliasesPackage: com.entity
+  #mapperLocations: classpath:mapper/*.xml
+  mapperLocations: classpath:*.xml
