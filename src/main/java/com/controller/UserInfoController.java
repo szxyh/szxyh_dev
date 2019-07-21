@@ -4,9 +4,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.entity.AuthenticationInfo;
 import com.entity.UserInfo;
-import com.service.AuthenticationInfoService;
-import com.service.UserInfoService;
+import com.resitory.AuthenticationInfoResitory;
+import com.resitory.UserInfoResitory;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -37,10 +37,10 @@ import io.swagger.annotations.ApiOperation;
 @RestController
 @RequestMapping("/szxyh/userInfo")
 public class UserInfoController {
-	@Resource
-	private UserInfoService userInfoService;
-	@Resource
-	private AuthenticationInfoService authenticationInfoService;
+	@Autowired
+	private UserInfoResitory userInfoResitory;
+	@Autowired
+	private AuthenticationInfoResitory authenticationInfoResitory;
 
 	@InitBinder
 	protected void init(HttpServletRequest request, ServletRequestDataBinder binder) {
@@ -52,12 +52,12 @@ public class UserInfoController {
 	@ApiOperation(value = "取得所有用户信息", notes = "展示所有信息")
 	@GetMapping(value = "/listAll")
 	public List<UserInfo> getUserInfoList() {
-		return userInfoService.findAll();
+		return userInfoResitory.findAll();
 	}
 
 	@ApiOperation(value = "添加一个用户", notes = "添加一个用户")
-	@PostMapping(value = "/add")
-	public int addUser(@RequestParam("realName") String realName, @RequestParam("sex") Integer sex,
+	@PostMapping(value = "/add", produces = { "application/json;charset=UTF-8" })
+	public UserInfo addUser(@RequestParam("realName") String realName, @RequestParam("sex") Integer sex,
 			@RequestParam("phoneNum") Long phoneNum, @RequestParam("entranceTime") Date entranceTime,
 			@RequestParam("graduationTime") Date graduationTime, @RequestParam("college") String college,
 			@RequestParam("major") String major, @RequestParam("currLocation") String currLocation,
@@ -65,16 +65,19 @@ public class UserInfoController {
 			String openId) {
 		UserInfo userInfo = new UserInfo();
 		userInfo.setRealName(realName);
-		userInfo.setSex(sex == 1 ? true : false);
+		userInfo.setSex(sex);
 		userInfo.setPhoneNum(phoneNum);
 		userInfo.setEntranceTime(entranceTime);
 		userInfo.setGraduationTime(graduationTime);
 		userInfo.setCollege(college);
 		userInfo.setMajor(major);
+		System.out.println("major is:" + major);
 		userInfo.setCurrLocation(currLocation);
 		userInfo.setIndustrySkill(industrySkill);
 		userInfo.setHobby(hobby);
 		userInfo.setPersonalProfile(personalProfile);
+		// TODO 此时的wechatImage是一个图里路径，需要根据
+		// wechatImage路径将图片下载，并保存到指定目录下，返回存放路径放入数据库
 		userInfo.setWechatImage(wechatImage);
 		if (openId == "" || openId == null) {
 			openId = " ";
@@ -83,12 +86,12 @@ public class UserInfoController {
 		Date dateNow = new Date();
 		userInfo.setCreateTime(dateNow);
 		userInfo.setUpdateTime(dateNow);
-		return userInfoService.addUserInfo(userInfo);
+		return userInfoResitory.save(userInfo);
 	}
 
 	@ApiOperation(value = "更新一个用户", notes = "更新一个用户")
 	@PutMapping(value = "/update/{id}")
-	public void updateUser(@PathVariable("id") Integer id, @RequestParam("realName") String realName,
+	public UserInfo updateUser(@PathVariable("id") Integer id, @RequestParam("realName") String realName,
 			@RequestParam("sex") Integer sex, @RequestParam("phoneNum") Long phoneNum,
 			@RequestParam("entranceTime") Date entranceTime, @RequestParam("graduationTime") Date graduationTime,
 			@RequestParam("college") String college, @RequestParam("major") String major,
@@ -97,7 +100,7 @@ public class UserInfoController {
 		UserInfo userInfo = new UserInfo();
 		userInfo.setId(id);
 		userInfo.setRealName(realName);
-		userInfo.setSex(sex == 1 ? true : false);
+		userInfo.setSex(sex);
 		userInfo.setPhoneNum(phoneNum);
 		userInfo.setEntranceTime(entranceTime);
 		userInfo.setGraduationTime(graduationTime);
@@ -109,20 +112,19 @@ public class UserInfoController {
 		userInfo.setWechatImage(wechatImage);
 		userInfo.setOpenId(openId);
 		userInfo.setUpdateTime(new Date());
-		userInfoService.updateUserInfo(userInfo);
+		return userInfoResitory.save(userInfo);
 	}
 
 	@ApiOperation(value = "查找指定用户", notes = "查找指定用户")
 	@GetMapping(value = "/find/{id}")
 	public UserInfo getUserInfo(@PathVariable("id") Integer id) {
-		UserInfo userInfo = userInfoService.getUserInfoById(id);
-		return userInfo;
+		return userInfoResitory.findOne(id);
 	}
 
 	@ApiOperation(value = "删除指定用户", notes = "删除指定用户")
 	@DeleteMapping(value = "/delete/{id}")
 	public void deleteUserInfo(@PathVariable("id") Integer id) {
-		userInfoService.deleteUserInfo(id);
+		userInfoResitory.delete(id);
 	}
 
 	@ApiOperation(value = "用户激活", notes = "指定用户激活")
@@ -131,7 +133,7 @@ public class UserInfoController {
 			@RequestParam("major") String major, @RequestParam("graduationTime") Date graduationTime,
 			@RequestParam("openId") String openId) {
 		// 判断待激活用户是否在表中，根据userName、major、graduationTime三个字段唯一识别
-		UserInfo userInfo = userInfoService.findByRealNameAndMajorAndGraduationTime(userName, major, graduationTime);
+		UserInfo userInfo = userInfoResitory.findByRealNameAndMajorAndGraduationTime(userName, major, graduationTime);
 		// 判断待激活用户是否已经激活，已经激活的不需要再激活
 		if (userInfo.getUserStatus() == Boolean.TRUE) {
 			return Boolean.TRUE;
@@ -140,40 +142,40 @@ public class UserInfoController {
 		// 激活用户并更新openId字段
 		userInfo.setUserStatus(Boolean.TRUE);
 		userInfo.setOpenId(openId);
-		userInfoService.updateUserInfo(userInfo);
+		userInfoResitory.save(userInfo);
 
 		return true;
 	}
 
 	@ApiOperation(value = "用户认证", notes = "指定用户认证")
-	@PutMapping(value = "/certifie")
+	@PostMapping(value = "/certifie")
 	public void userCertifie(@RequestParam("certifiedUserId") Integer certifiedUserId,
 			@RequestParam("authenticatorId") Integer authenticatorId) {
-		List<AuthenticationInfo> authenticationInfoList = authenticationInfoService
+		List<AuthenticationInfo> authenticationInfoList = authenticationInfoResitory
 				.findByAuthenticatorId(authenticatorId);
 		if (authenticationInfoList.size() >= 2) {
 			return;
 		}
 		addAuthenticationInfo(certifiedUserId, authenticatorId);
-		List<AuthenticationInfo> infoList = authenticationInfoService.findByAuthenticatorId(authenticatorId);
+		List<AuthenticationInfo> infoList = authenticationInfoResitory.findByAuthenticatorId(authenticatorId);
 		if (infoList.size() < 2) {
 			return;
 		}
-		UserInfo userInfo = userInfoService.getUserInfoById(authenticatorId);
+		UserInfo userInfo = userInfoResitory.findOne(authenticatorId);
 		userInfo.setUserStatus(Boolean.TRUE);
 		userInfo.setUpdateTime(new Date());
-		userInfoService.updateUserInfo(userInfo);
+		userInfoResitory.save(userInfo);
 	}
 
 	@ApiOperation(value = "添加一条用户认证信息", notes = "添加一条用户认证信息")
 	@PostMapping(value = "/addAuthenticationInfo")
-	public int addAuthenticationInfo(@RequestParam("certifiedUserId") Integer certifiedUserId,
+	public AuthenticationInfo addAuthenticationInfo(@RequestParam("certifiedUserId") Integer certifiedUserId,
 			@RequestParam("authenticatorId") Integer authenticatorId) {
 		AuthenticationInfo authenticationInfo = new AuthenticationInfo();
 		authenticationInfo.setCertifiedUserId(certifiedUserId);
 		authenticationInfo.setAuthenticatorId(authenticatorId);
 		authenticationInfo.setCertifieTime(new Date());
-		return authenticationInfoService.addAuthenticationInfo(authenticationInfo);
+		return authenticationInfoResitory.save(authenticationInfo);
 	}
 
 }

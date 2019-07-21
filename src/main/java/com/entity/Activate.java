@@ -8,10 +8,16 @@ public class Activate {
 	private Integer activateId;
 	// 活动标题
 	private String activateTitle;
+	// 用户id
+	private Integer userId;
+	// 用户名称
+	private String userName;
 	// 活动参与人列表
 	private List<ActivatePersonnelList> activatePersonnelLists = new ArrayList<ActivatePersonnelList>();
 	// 活动评论
 	private List<ActivateReviewDetail> activateReviewDetails = new ArrayList<ActivateReviewDetail>();
+	// 活动信息
+	private List<ActivateInfo> activateInfos = new ArrayList<ActivateInfo>();
 
 	public Integer getActivateId() {
 		return activateId;
@@ -43,6 +49,30 @@ public class Activate {
 
 	public void setActivateReviewDetails(List<ActivateReviewDetail> activateReviewDetails) {
 		this.activateReviewDetails = activateReviewDetails;
+	}
+
+	public Integer getUserId() {
+		return userId;
+	}
+
+	public void setUserId(Integer userId) {
+		this.userId = userId;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public List<ActivateInfo> getActivateInfos() {
+		return activateInfos;
+	}
+
+	public void setActivateInfos(List<ActivateInfo> activateInfos) {
+		this.activateInfos = activateInfos;
 	}
 
 }

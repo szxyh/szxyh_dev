@@ -2,54 +2,80 @@ package com.entity;
 
 import java.util.Date;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+/**
+ * 操作记录表
+ * 
+ * @author lyz
+ *
+ */
+@Entity
+@Table(name = "operation_record")
+@org.hibernate.annotations.Table(appliesTo = "operation_record", comment = "操作记录")
 public class OperationRecord {
-    private Integer id;
+	@Id
+	@GeneratedValue
+	private Integer id;
+	@Column(nullable = false, name = "user_id", columnDefinition = "int(11) COMMENT '用户id'")
+	private Integer userId;
+	@Column(nullable = false, name = "operation_time", columnDefinition = "DATETIME COMMENT '操作时间'")
+	@DateTimeFormat(pattern = "yyyy-MM-dd")
+	@JsonFormat(pattern = "yyyy-MM-dd", timezone = "UTC")
+	private Date operationTime;
+	@Column(nullable = false, name = "create_time", columnDefinition = "DATETIME COMMENT '创建时间'")
+	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "UTC")
+	private Date createTime;
+	@Column(nullable = false, columnDefinition = "varchar(50) COMMENT '动作行为'")
+	private String action;
 
-    private Integer userId;
+	public Integer getId() {
+		return id;
+	}
 
-    private Date operationTime;
+	public void setId(Integer id) {
+		this.id = id;
+	}
 
-    private Date createTime;
+	public Integer getUserId() {
+		return userId;
+	}
 
-    private String action;
+	public void setUserId(Integer userId) {
+		this.userId = userId;
+	}
 
-    public Integer getId() {
-        return id;
-    }
+	public Date getOperationTime() {
+		return operationTime;
+	}
 
-    public void setId(Integer id) {
-        this.id = id;
-    }
+	public void setOperationTime(Date operationTime) {
+		this.operationTime = operationTime;
+	}
 
-    public Integer getUserId() {
-        return userId;
-    }
+	public Date getCreateTime() {
+		return createTime;
+	}
 
-    public void setUserId(Integer userId) {
-        this.userId = userId;
-    }
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
+	}
 
-    public Date getOperationTime() {
-        return operationTime;
-    }
+	public String getAction() {
+		return action;
+	}
 
-    public void setOperationTime(Date operationTime) {
-        this.operationTime = operationTime;
-    }
+	public void setAction(String action) {
+		this.action = action;
+	}
 
-    public Date getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
-    }
-
-    public String getAction() {
-        return action;
-    }
-
-    public void setAction(String action) {
-        this.action = action == null ? null : action.trim();
-    }
 }

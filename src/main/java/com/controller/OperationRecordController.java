@@ -4,9 +4,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.entity.OperationRecord;
-import com.service.OperationRecordService;
+import com.resitory.OperationRecordResitory;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -32,8 +32,8 @@ import io.swagger.annotations.ApiOperation;
 @RestController
 @RequestMapping("/szxyh/operationRecord")
 public class OperationRecordController {
-	@Resource
-	private OperationRecordService operationRecordService;
+	@Autowired
+	private OperationRecordResitory operationRecordResitory;
 
 	@InitBinder
 	protected void init(HttpServletRequest request, ServletRequestDataBinder binder) {
@@ -45,20 +45,19 @@ public class OperationRecordController {
 	@ApiOperation(value = "取得所有操作记录", notes = "展示所有操作记录")
 	@GetMapping(value = "/listAllOperationRecord")
 	public List<OperationRecord> getOperationRecordList() {
-		return operationRecordService.findAll();
+		return operationRecordResitory.findAll();
 	}
 
 	@ApiOperation(value = "添加一条操作记录", notes = "添加一条操作记录")
 	@PostMapping(value = "/addOperationRecord")
-	public int addOperationRecord(@RequestParam("userId") Integer userId,
-			@RequestParam("action") String action) {
+	public OperationRecord addUser(@RequestParam("userId") Integer userId, @RequestParam("action") String action) {
 		OperationRecord operationRecord = new OperationRecord();
 		operationRecord.setUserId(userId);
 		Date dateNow = new Date();
 		operationRecord.setCreateTime(dateNow);
 		operationRecord.setOperationTime(dateNow);
 		operationRecord.setAction(action);
-		return operationRecordService.addOperationRecord(operationRecord);
+		return operationRecordResitory.save(operationRecord);
 	}
 
 }

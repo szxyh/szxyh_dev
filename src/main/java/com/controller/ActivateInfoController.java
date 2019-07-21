@@ -1,12 +1,13 @@
 package com.controller;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,9 +24,9 @@ import com.entity.Activate;
 import com.entity.ActivateInfo;
 import com.entity.ActivatePersonnelList;
 import com.entity.ActivateReviewDetail;
-import com.service.ActivateInfoService;
-import com.service.ActivatePersonnelListService;
-import com.service.ActivateReviewDetailService;
+import com.resitory.ActivateInfoResitory;
+import com.resitory.ActivatePersonnelListResitory;
+import com.resitory.ActivateReviewDetailResitory;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -40,12 +41,12 @@ import io.swagger.annotations.ApiOperation;
 @RestController
 @RequestMapping("/szxyh/activateInfo")
 public class ActivateInfoController {
-	@Resource
-	private ActivateInfoService activateInfoService;
-	@Resource
-	private ActivatePersonnelListService activatePersonnelListService;
-	@Resource
-	private ActivateReviewDetailService activateReviewDetailService;
+	@Autowired
+	private ActivateInfoResitory activateInfoResitory;
+	@Autowired
+	private ActivatePersonnelListResitory activatePersonnelListResitory;
+	@Autowired
+	private ActivateReviewDetailResitory activateReviewDetailResitory;
 
 	@InitBinder
 	protected void init(HttpServletRequest request, ServletRequestDataBinder binder) {
@@ -57,17 +58,40 @@ public class ActivateInfoController {
 	@ApiOperation(value = "取得所有活动信息", notes = "展示所有活动")
 	@GetMapping(value = "/listAllActivateInfo")
 	public List<ActivateInfo> getActivateInfoList() {
-		return activateInfoService.findAll();
+		return activateInfoResitory.findAll();
+	}
+
+	@ApiOperation(value = "取得某个用户参加的所有活动信息", notes = "取得某个用户参加的所有活动信息")
+	@GetMapping(value = "/listUserAllActivateInfo")
+	public Activate getActivateInfoByUserId(@PathVariable("userId") Integer userId) {
+		List<ActivatePersonnelList> activatePersonnelLists = activatePersonnelListResitory.findByUserId(userId);
+		Activate activate = new Activate();
+		if (activatePersonnelLists == null || activatePersonnelLists.size() == 0) {
+			return activate;
+		}
+		List<ActivateInfo> activateInfos = new ArrayList<ActivateInfo>();
+		for (ActivatePersonnelList activatePersonnelList : activatePersonnelLists) {
+			Integer activateId = activatePersonnelList.getActivateId();
+			String userName = activatePersonnelList.getUserName();
+			ActivateInfo activateInfo = activateInfoResitory.findOne(activateId);
+			activate.setUserName(userName);
+			activateInfos.add(activateInfo);
+		}
+		activate.setUserId(userId);
+		activate.setActivateInfos(activateInfos);
+		return activate;
 	}
 
 	@ApiOperation(value = "添加一个活动", notes = "添加一个活动")
 	@PostMapping(value = "/addActivate")
-	public int addActivate(@RequestParam("title") String title, @RequestParam("actTime") Date actTime,
+	public ActivateInfo addActivate(@RequestParam("title") String title,
+			@RequestParam("activateImage") String activateImage, @RequestParam("actTime") Date actTime,
 			@RequestParam("endTime") Date endTime, @RequestParam("act_creator") String act_creator,
 			@RequestParam("content") String content, @RequestParam("participateNum") Integer participateNum,
 			@RequestParam("cost") Double cost) {
 		ActivateInfo activateInfo = new ActivateInfo();
 		activateInfo.setTitle(title);
+		activateInfo.setActivateImage(activateImage);
 		activateInfo.setActTime(actTime);
 		activateInfo.setEndTime(endTime);
 		activateInfo.setActCreator(act_creator);
@@ -77,19 +101,20 @@ public class ActivateInfoController {
 		Date dateNow = new Date();
 		activateInfo.setCreateTime(dateNow);
 		activateInfo.setUpdateTime(dateNow);
-		return activateInfoService.addActivateInfo(activateInfo);
+		return activateInfoResitory.save(activateInfo);
 	}
 
 	@ApiOperation(value = "更新一个活动", notes = "更新一个活动")
 	@PutMapping(value = "/updateActivate/{activateId}")
-	public void updateActivate(@PathVariable("activateId") Integer activateId,
-			@RequestParam("title") String title,
+	public ActivateInfo updateActivate(@PathVariable("activateId") Integer activateId,
+			@RequestParam("title") String title, @RequestParam("activateImage") String activateImage,
 			@RequestParam("actTime") Date actTime, @RequestParam("endTime") Date endTime,
 			@RequestParam("act_creator") String act_creator, @RequestParam("content") String content,
 			@RequestParam("participateNum") Integer participateNum, @RequestParam("cost") Double cost) {
 		ActivateInfo activateInfo = new ActivateInfo();
 		activateInfo.setActivateId(activateId);
 		activateInfo.setTitle(title);
+		activateInfo.setActivateImage(activateImage);
 		activateInfo.setActTime(actTime);
 		activateInfo.setEndTime(endTime);
 		activateInfo.setActCreator(act_creator);
@@ -97,24 +122,24 @@ public class ActivateInfoController {
 		activateInfo.setParticipateNum(participateNum);
 		activateInfo.setCost(cost);
 		activateInfo.setUpdateTime(new Date());
-		activateInfoService.updateActivate(activateInfo);
+		return activateInfoResitory.save(activateInfo);
 	}
 
 	@ApiOperation(value = "查找指定活动记录", notes = "查找指定活动记录")
 	@GetMapping(value = "/find/{activateId}")
-	public ActivateInfo getActivateInfo(@PathVariable("activateId") Integer activateId) {
-		return activateInfoService.getActivateInfoById(activateId);
+	public ActivateInfo getUserInfo(@PathVariable("activateId") Integer activateId) {
+		return activateInfoResitory.findOne(activateId);
 	}
 
 	@ApiOperation(value = "删除指定活动", notes = "删除指定活动")
 	@DeleteMapping(value = "/delete/{activateId}")
-	public void deleteActivateInfo(@PathVariable("activateId") Integer activateId) {
-		activateInfoService.deleteActivateInfo(activateId);
+	public void deleteUserInfo(@PathVariable("activateId") Integer activateId) {
+		activateInfoResitory.delete(activateId);
 	}
 
 	@ApiOperation(value = "活动报名", notes = "活动报名")
 	@PostMapping(value = "/activateSignUp")
-	public int activateSignUp(@RequestParam("activateId") Integer activateId,
+	public ActivatePersonnelList activateSignUp(@RequestParam("activateId") Integer activateId,
 			@RequestParam("userId") Integer userId, @RequestParam("userName") String userName,
 			@RequestParam("isDrive") Boolean isDrive, @RequestParam("isFamily") Boolean isFamily,
 			@RequestParam("isManned") Boolean isManned, @RequestParam("isParticipate") Boolean isParticipate) {
@@ -129,7 +154,7 @@ public class ActivateInfoController {
 		Date dateNow = new Date();
 		activatePersonnelList.setCreateTime(dateNow);
 		activatePersonnelList.setUpdateTime(dateNow);
-		return activatePersonnelListService.addActivatePersonnelList(activatePersonnelList);
+		return activatePersonnelListResitory.save(activatePersonnelList);
 	}
 
 	@ApiOperation(value = "活动取消", notes = "活动取消")
@@ -139,15 +164,15 @@ public class ActivateInfoController {
 		ActivatePersonnelList activatePersonnelList = new ActivatePersonnelList();
 		activatePersonnelList.setActivateId(activateId);
 		activatePersonnelList.setUserId(userId);
-		// activatePersonnelList.setIsParticipate(isParticipate);
+		activatePersonnelList.setIsParticipate(isParticipate);
 		activatePersonnelList.setUpdateTime(new Date());
-		activatePersonnelListService.updateActivatePersonnelList(activatePersonnelList);
+		activatePersonnelListResitory.save(activatePersonnelList);
 		return Boolean.TRUE;
 	}
 
 	@ApiOperation(value = "活动评论", notes = "活动评论")
 	@PostMapping(value = "/addActivateReview")
-	public int addActivateReview(@RequestParam("activateId") Integer activateId,
+	public ActivateReviewDetail addActivateReview(@RequestParam("activateId") Integer activateId,
 			@RequestParam("userId") Integer userId, @RequestParam("userName") String userName,
 			@RequestParam("comment") String comment) {
 		ActivateReviewDetail activateReviewDetail = new ActivateReviewDetail();
@@ -157,18 +182,18 @@ public class ActivateInfoController {
 		activateReviewDetail.setComment(comment);
 		Date dateNow = new Date();
 		activateReviewDetail.setCreateTime(dateNow);
-		return activateReviewDetailService.addActivateReview(activateReviewDetail);
+		return activateReviewDetailResitory.save(activateReviewDetail);
 	}
 
 	@ApiOperation(value = "活动参与人列表", notes = "活动参与人列表")
 	@GetMapping(value = "/personnelLists/{activateId}")
 	public Activate personnelLists(@RequestParam("activateId") Integer activateId) {
-		ActivateInfo activateInfo = activateInfoService.getActivateInfoById(activateId);
+		ActivateInfo activateInfo = activateInfoResitory.findOne(activateId);
 		if (activateInfo == null) {
 			// 异常处理
 		}
 		String activateTitle = activateInfo.getTitle();
-		List<ActivatePersonnelList> lists = activatePersonnelListService.findByActivateId(activateId);
+		List<ActivatePersonnelList> lists = activatePersonnelListResitory.findByActivateId(activateId);
 		if (lists == null || lists.size() == 0) {
 			// 异常处理
 		}
@@ -182,12 +207,12 @@ public class ActivateInfoController {
 	@ApiOperation(value = "活动回顾", notes = "活动回顾")
 	@GetMapping(value = "/reviewList/{activateId}")
 	public Activate reviewList(@RequestParam("activateId") Integer activateId) {
-		ActivateInfo activateInfo = activateInfoService.getActivateInfoById(activateId);
+		ActivateInfo activateInfo = activateInfoResitory.findOne(activateId);
 		if (activateInfo == null) {
 			// 异常处理
 		}
 		String activateTitle = activateInfo.getTitle();
-		List<ActivateReviewDetail> lists = activateReviewDetailService.findByActivateId(activateId);
+		List<ActivateReviewDetail> lists = activateReviewDetailResitory.findByActivateId(activateId);
 		if (lists == null || lists.size() == 0) {
 			// 异常处理
 		}
